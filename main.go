@@ -7,11 +7,25 @@ import (
 	"AinedIndexItemCLI/helpers"
 	"AinedIndexItemCLI/s3"
 	"fmt"
+	"github.com/joho/godotenv"
 	"log"
+	"os"
 	"runtime"
 	"sync"
 	"time"
 )
+
+func loadEnv() {
+	err := godotenv.Load()
+
+	if err != nil {
+		panic("Error loading .env file")
+	}
+}
+
+func init() {
+	loadEnv()
+}
 
 func main() {
 	runtime.GOMAXPROCS(4)
@@ -19,10 +33,12 @@ func main() {
 	start := time.Now()
 
 	config := databases.Config{
-		Addresses: []string{"http://localhost:9200"},
+		Addresses: []string{os.Getenv("HOST_NAME")},
+		Username:  os.Getenv("HOST_USERNAME"),
+		Password:  os.Getenv("HOST_PASSWORD"),
 	}
 
-	db := databases.GetCon("developer_master")
+	db := databases.GetCon(os.Getenv("MASTER_DATABASE"))
 
 	s3client, err := s3.NewS3Client()
 
@@ -64,7 +80,7 @@ func main() {
 			statuses := map[string]db_models.Status{}
 			var dbStatuses []db_models.Status
 			var items []objects.Item
-			tenantDB := databases.GetCon(tenant.ID.String())
+			tenantDB := databases.GetCon(os.Getenv("PREFIX_DATABASE") + tenant.ID.String())
 
 			tenantDB.Table("status").Find(&dbStatuses)
 
